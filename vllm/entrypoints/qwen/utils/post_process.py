@@ -4,7 +4,7 @@ from typing import Dict, AsyncGenerator
 
 from vllm.entrypoints.openai.protocol import (
     ChatCompletionResponse,
-    DeltaMessage,
+    DeltaMessage
 )
 from vllm.entrypoints.qwen.utils.schema import *
 from vllm.entrypoints.qwen.utils.utils import format_as_multimodal_message, qwen_to_openai_response_message
@@ -50,7 +50,6 @@ async def post_process_message_stream(
     last_chunk = {}
     fn_exist = False
     async for raw_chunk in response:
-        logger.info(f"raw chunk: {raw_chunk}")
         try:
             if STREAM_END == raw_chunk:
                 logger.info(f"stream end: {raw_chunk}")
@@ -62,7 +61,7 @@ async def post_process_message_stream(
                     openai_msg = qwen_to_openai_response_message(post_msg)
                     delta_message = DeltaMessage(tool_calls=openai_msg.tool_calls)
                     last_chunk["choices"][0]["delta"] = delta_message.model_dump(exclude_unset=True)
-                    yield OPENAI_DATA_START + json.dumps(last_chunk)
+                    yield OPENAI_DATA_START + json.dumps(last_chunk, ensure_ascii=False)
                     yield raw_chunk
                 else:
                     yield raw_chunk
@@ -76,7 +75,7 @@ async def post_process_message_stream(
                 if fn_exist:
                     chunk["choices"][0]["delta"]["content"] = ""
                     # 空响应 防止单次响应超时
-                    yield OPENAI_DATA_START + json.dumps(chunk)
+                    yield OPENAI_DATA_START + json.dumps(chunk, ensure_ascii=False)
 
                 fn_status = check_function_str(full_response)
                 if fn_status == SFnStatus.not_sure:
@@ -88,7 +87,7 @@ async def post_process_message_stream(
                         full_response = FN_NAME + splits[1]
                         chunk["choices"][0]["delta"]["content"] = splits[0]
                         # 将出现在function 之前的内容返回
-                        yield OPENAI_DATA_START + json.dumps(chunk)
+                        yield OPENAI_DATA_START + json.dumps(chunk, ensure_ascii=False)
                 else:
                     full_response = ""
                     yield raw_chunk

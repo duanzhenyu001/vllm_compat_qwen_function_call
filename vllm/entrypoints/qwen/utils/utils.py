@@ -493,8 +493,14 @@ def encode_to_qwen_message(messages: List[Union[Dict, ChatCompletionMessageParam
                     )
                     tool_id_name[tool["id"]] = tool["function"]["name"]
             elif "function_call" in msg:
+                name = msg["function_call"]["name"]
+                args = msg["function_call"]["arguments"]
+                try:
+                    args = args.encode('ascii').decode('unicode_escape')
+                except Exception:
+                    pass
                 qwen_messages.append(
-                    Message(role=msg[ROLE], content="", function_call=FunctionCall(**msg["function_call"]))
+                    Message(role=msg[ROLE], content="", function_call=FunctionCall(name=name, arguments=args))
                 )
         if msg[ROLE] == FUNCTION or msg[ROLE] == TOOL:
             name = msg.get("name", "")
